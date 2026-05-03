@@ -1,498 +1,23 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo, useContext } from "react";
+import Link from "next/link";
 import { createPortal } from "react-dom";
 import {
   SoundCtx,
-  CommandMenu,
-  AskAyush,
   BlurIn,
   Reveal,
   AnimatedNumber,
   useDragReorder,
 } from "./shared";
 
-// Portfolio composition. Single B&W view.
-export default function Portfolio({ theme, P }) {
-  const [cmdOpen, setCmdOpen] = useState(false);
-  const [askOpen, setAskOpen] = useState(false);
-  const [active, setActive] = useState("hero");
-  const [projectOrder, setProjectOrder] = useState(P.projects.map((p) => p.id));
-  const [expanded, setExpanded] = useState(null);
-  const [tlOpen, setTlOpen] = useState(null); // timeline role index
-  const [scrollPct, setScrollPct] = useState(0);
-  const { on: soundOn, setOn: setSoundOn, play } = useContext(SoundCtx);
-
-  const scrollTo = (id) => {
-    const el = document.getElementById(id);
-    if (el) window.scrollTo({ top: el.offsetTop - 40, behavior: "smooth" });
-  };
-
-  // active section + scroll progress
-  useEffect(() => {
-    const ids = ["hero", "work", "timeline", "manifesto", "now", "reading", "contact"];
-    const obs = new IntersectionObserver((entries) => {
-      entries.forEach((e) => { if (e.isIntersecting) setActive(e.target.id); });
-    }, { threshold: 0.3 });
-    ids.forEach((id) => { const el = document.getElementById(id); if (el) obs.observe(el); });
-
-    const onScroll = () => {
-      const max = document.documentElement.scrollHeight - window.innerHeight;
-      setScrollPct(max > 0 ? (window.scrollY / max) * 100 : 0);
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    onScroll();
-    return () => { obs.disconnect(); window.removeEventListener("scroll", onScroll); };
-  }, []);
-
-  // ⌘K menu items
-  const cmdItems = useMemo(() => [
-    { id: "go-work", label: "Jump to Work", hint: "section", icon: "◢", action: () => scrollTo("work") },
-    { id: "go-timeline", label: "Jump to Timeline", hint: "section", icon: "◷", action: () => scrollTo("timeline") },
-    { id: "go-manifesto", label: "Jump to Manifesto", hint: "section", icon: "§", action: () => scrollTo("manifesto") },
-    { id: "go-now", label: "Jump to Now", hint: "section", icon: "●", action: () => scrollTo("now") },
-    { id: "go-reading", label: "Jump to Reading", hint: "section", icon: "≡", action: () => scrollTo("reading") },
-    { id: "go-contact", label: "Jump to Contact", hint: "section", icon: "✉", action: () => scrollTo("contact") },
-    { id: "ask", label: "Ask Ayush anything", hint: "AI", icon: "✦", action: () => setAskOpen(true) },
-    { id: "email", label: "Email Ayush", hint: P.email, icon: "@", action: () => { window.location.href = `mailto:${P.email}`; } },
-    { id: "copy-email", label: "Copy email", hint: P.email, icon: "⎘", action: () => { navigator.clipboard.writeText(P.email); play("success"); } },
-    { id: "sound", label: "Toggle sound", hint: soundOn ? "on" : "off", icon: "♪", action: () => setSoundOn((o) => !o) },
-    ...P.projects.map((p) => ({
-      id: `proj-${p.id}`, label: p.title, hint: p.company, icon: "◆",
-      keywords: [p.company, ...(p.stack || [])],
-      action: () => { scrollTo("work"); setTimeout(() => setExpanded(p.id), 500); },
-    })),
-  ], [soundOn, setSoundOn, P, play]);
-
-  const runCmd = (it) => { it.action?.(); };
-
-  const cardRects = useRef({});
-  const expandedProject = expanded ? P.projects.find((p) => p.id === expanded) : null;
-
-  return (
-    <div style={{ background: theme.bg, color: theme.ink, fontFamily: theme.body, minHeight: "100vh", position: "relative" }}>
-      <style>{`
-        :root { --sel-fg: ${theme.bg}; }
-        .display { font-family: ${theme.display}; font-weight: 400; letter-spacing: -0.025em; line-height: 1; }
-        .mono { font-family: ${theme.mono}; font-feature-settings: "ss01"; }
-        .link-u { position: relative; }
-        .link-u::after {
-          content: ''; position: absolute; left: 0; right: 0; bottom: -2px; height: 1px;
-          background: currentColor; transform-origin: right; transform: scaleX(0);
-          transition: transform .45s cubic-bezier(.2,.8,.2,1);
-        }
-        .link-u:hover::after { transform-origin: left; transform: scaleX(1); }
-        .chip { border: 1px solid ${theme.border}; border-radius: 999px; padding: 4px 10px; font-size: 11px; color: ${theme.dim}; font-family: ${theme.mono}; }
-        .btn-primary {
-          background: ${theme.ink}; color: ${theme.bg}; border: 0;
-          padding: 12px 20px; border-radius: 999px; font-size: 13px; font-weight: 500;
-          font-family: inherit; transition: transform .2s, background .2s;
-          display: inline-flex; align-items: center; gap: 8px;
-        }
-        .btn-primary:hover { transform: translateY(-1px); }
-        .btn-ghost {
-          background: transparent; color: ${theme.ink}; border: 1px solid ${theme.border};
-          padding: 12px 20px; border-radius: 999px; font-size: 13px; font-weight: 500;
-          font-family: inherit; transition: background .2s;
-          display: inline-flex; align-items: center; gap: 8px;
-        }
-        .btn-ghost:hover { background: ${theme.hover}; }
-        .grain::before {
-          content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 1;
-          opacity: .035; mix-blend-mode: multiply;
-          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-        }
-        .bookshelf-zone { overflow: visible; position: relative; }
-        /* One continuous shelf: scroll horizontally when the row exceeds the viewport. */
-        .reading-single-scroll {
-          overflow-x: auto;
-          overflow-y: visible;
-          -webkit-overflow-scrolling: touch;
-          margin: 40px 0 0;
-          padding: clamp(28px, 5vw, 48px) clamp(20px, 4vw, 40px) 28px;
-          scrollbar-width: thin;
-        }
-        .reading-single-scroll::-webkit-scrollbar { height: 5px; }
-        .reading-single-scroll::-webkit-scrollbar-thumb {
-          background: ${theme.border}; border-radius: 99px;
-        }
-        .reading-single-inner {
-          width: max-content;
-          margin: 0 auto;
-          padding: 0 16px;
-        }
-        .bookshelf-row {
-          display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: center;
-          gap: 14px;
-          padding: 108px 10px 32px;
-          border-bottom: 2px solid ${theme.border};
-        }
-        .bookshelf-row-single {
-          flex-wrap: nowrap;
-          justify-content: flex-start;
-          border-bottom: none;
-          padding: 132px 0 32px;
-        }
-        /* Timeline under the shelf — segment widths match book-count ratios. */
-        .reading-timeline-track {
-          display: flex;
-          align-items: flex-start;
-          width: 100%;
-          margin-top: 0;
-          border-top: 2px solid ${theme.ink};
-          opacity: 0.88;
-        }
-        .reading-timeline-segment {
-          flex: 1;
-          box-sizing: border-box;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          text-align: center;
-          padding: 12px 8px 4px;
-          min-width: 0;
-          position: relative;
-        }
-        .reading-timeline-segment:not(:first-child) {
-          border-left: 1px solid ${theme.border};
-        }
-        .reading-timeline-dot {
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-          margin-top: -17px;
-          margin-bottom: 6px;
-          background: ${theme.ink};
-          border: 2px solid ${theme.bg};
-          box-shadow: 0 0 0 1px ${theme.border};
-          flex-shrink: 0;
-        }
-        .reading-timeline-genre {
-          font-family: ${theme.mono};
-          font-size: 10px;
-          letter-spacing: 0.1em;
-          text-transform: uppercase;
-          color: ${theme.dim};
-          line-height: 1.4;
-          text-wrap: balance;
-          hyphens: auto;
-        }
-        .bookshelf-slot {
-          position: relative; display: flex; flex-direction: column; align-items: center;
-          flex: 0 0 auto;
-        }
-        .bookshelf-bubble {
-          pointer-events: none;
-          box-sizing: border-box;
-          position: absolute; left: 50%; bottom: calc(100% + 20px);
-          transform: translateX(-50%) translateY(8px) scale(0.97);
-          transform-origin: bottom center;
-          width: min(360px, calc(100vw - 48px));
-          padding: 24px 26px 26px;
-          border-radius: 14px;
-          background: ${theme.surface}; color: ${theme.ink}; border: 1px solid ${theme.border};
-          box-shadow: 0 12px 42px rgba(0, 0, 0, 0.12);
-          z-index: 30; opacity: 0; visibility: hidden;
-          text-align: left;
-          transition: opacity 160ms cubic-bezier(0.23, 1, 0.32, 1) 0ms,
-            transform 160ms cubic-bezier(0.23, 1, 0.32, 1) 0ms,
-            visibility 0ms linear 160ms;
-        }
-        .bookshelf-bubble-title {
-          margin: 0 0 12px;
-          padding: 0;
-        }
-        .bookshelf-bubble-author {
-          margin: 0 0 14px;
-          padding: 0;
-        }
-        .bookshelf-bubble-tag {
-          margin: 0;
-          padding: 14px 0 0;
-          border-top: 1px solid ${theme.border};
-          font-size: 14px;
-          line-height: 1.62;
-          color: ${theme.dim};
-          font-style: normal;
-        }
-        /* Mini-book: spine + page block + top edge so reads as a volume, not a bar. */
-        .mini-book-btn {
-          display: block;
-          padding: 0;
-          margin: 0;
-          border: none;
-          background: transparent;
-          cursor: pointer;
-          -webkit-tap-highlight-color: transparent;
-          transition: transform 175ms cubic-bezier(0.23, 1, 0.32, 1);
-          filter: drop-shadow(2px 4px 10px rgba(0, 0, 0, 0.12));
-        }
-        .mini-book-block {
-          display: flex;
-          flex-direction: column;
-          align-items: stretch;
-        }
-        .mini-book-pages-top {
-          align-self: center;
-          width: calc(100% - 4px);
-          height: 7px;
-          border-radius: 4px 4px 0 0;
-          border: 1px solid rgba(0, 0, 0, 0.07);
-          border-bottom: none;
-          background:
-            repeating-linear-gradient(
-              -90deg,
-              #f7f4ec 0 2px,
-              #ebe5d8 2px 3px,
-              #f2ede3 3px 4px
-            );
-          box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
-        }
-        .mini-book-body {
-          display: flex;
-          flex-direction: row;
-          align-items: stretch;
-          min-height: 152px;
-        }
-        .mini-book-spine {
-          flex: 0 0 auto;
-          width: 29px;
-          border-radius: 3px 0 0 3px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          box-shadow:
-            inset 2px 0 6px rgba(255, 255, 255, 0.2),
-            inset -2px 0 8px rgba(0, 0, 0, 0.15);
-          font-family: ${theme.mono};
-          font-weight: 600;
-          font-size: 12px;
-        }
-        .mini-book-letter {
-          writing-mode: vertical-rl;
-          text-orientation: mixed;
-          transform: rotate(180deg);
-          letter-spacing: 0.04em;
-        }
-        .mini-book-pages-edge {
-          flex: 0 0 auto;
-          border-radius: 0 5px 5px 0;
-          border: 1px solid rgba(0, 0, 0, 0.06);
-          border-left: none;
-          background:
-            repeating-linear-gradient(
-              90deg,
-              rgba(255, 255, 255, 0.5) 0 1px,
-              rgba(0, 0, 0, 0.035) 1px 2px,
-              rgba(255, 255, 255, 0.35) 2px 3px
-            );
-          box-shadow: inset 3px 0 6px rgba(0, 0, 0, 0.04);
-        }
-        @media (hover: hover) and (pointer: fine) {
-          .bookshelf-slot:hover .bookshelf-bubble {
-            opacity: 1; visibility: visible;
-            transform: translateX(-50%) translateY(0) scale(1);
-            transition: opacity 160ms cubic-bezier(0.23, 1, 0.32, 1) 105ms,
-              transform 160ms cubic-bezier(0.23, 1, 0.32, 1) 105ms,
-              visibility 0ms linear 0ms;
-          }
-          .bookshelf-slot:hover .mini-book-btn:not(:active) { transform: translateY(-7px); }
-        }
-        .bookshelf-slot.bookshelf-slot--pinned .bookshelf-bubble {
-          opacity: 1; visibility: visible;
-          transform: translateX(-50%) translateY(0) scale(1);
-          transition-delay: 0ms, 0ms, 0ms;
-          transition-duration: 150ms, 150ms, 0ms;
-        }
-        .mini-book-btn:active {
-          transform: scale(0.97);
-          filter: drop-shadow(1px 2px 6px rgba(0, 0, 0, 0.1));
-        }
-        @media (hover: hover) and (pointer: fine) {
-          .bookshelf-slot:hover .mini-book-btn:active:not(:disabled) {
-            transform: translateY(-7px) scale(0.97);
-          }
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .bookshelf-bubble {
-            transform: translateX(-50%) scale(1) !important;
-            transition: opacity 120ms ease, visibility 120ms ease;
-          }
-          .bookshelf-slot:hover .bookshelf-bubble,
-          .bookshelf-slot.bookshelf-slot--pinned .bookshelf-bubble {
-            transform: translateX(-50%) scale(1) !important;
-          }
-          .mini-book-btn,
-          .bookshelf-slot:hover .mini-book-btn:not(:active) { transform: none !important; }
-          .mini-book-btn:active {
-            transform: scale(0.97) !important;
-          }
-        }
-      `}</style>
-
-      <div className="grain" />
-
-      {/* scroll progress bar */}
-      <div style={{
-        position: "fixed", top: 0, left: 0, height: 2, width: `${scrollPct}%`,
-        background: theme.ink, zIndex: 110, transition: "width .1s linear",
-      }} />
-
-      {/* section index — left rail */}
-      <SectionRail theme={theme} active={active} scrollTo={scrollTo} />
-
-      <TopNav theme={theme} P={P} active={active} scrollTo={scrollTo}
-        onCmd={() => setCmdOpen(true)} onAsk={() => setAskOpen(true)}
-        soundOn={soundOn} toggleSound={() => setSoundOn((o) => !o)} />
-
-      <main>
-        <Hero theme={theme} P={P} play={play} onExplore={() => scrollTo("work")} onAsk={() => setAskOpen(true)} />
-        <Work theme={theme} projects={P.projects} order={projectOrder} setOrder={setProjectOrder}
-          setExpanded={setExpanded} cardRects={cardRects} />
-        <Timeline theme={theme} P={P} onOpenRole={(i) => { setTlOpen(i); play("open"); }} />
-        <Manifesto theme={theme} P={P} />
-        <Now theme={theme} P={P} />
-        <Reading theme={theme} P={P} />
-        <Contact theme={theme} P={P} onAsk={() => setAskOpen(true)} />
-        <Footer theme={theme} P={P} />
-      </main>
-
-      {expandedProject && (
-        <ProjectOverlay theme={theme} project={expandedProject}
-          origin={cardRects.current[expandedProject.id]}
-          onClose={() => { setExpanded(null); play("close"); }} />
-      )}
-
-      {tlOpen != null && (
-        <RoleOverlay theme={theme} role={P.timeline[tlOpen]} onClose={() => { setTlOpen(null); play("close"); }} />
-      )}
-
-      <FloatingAsk theme={theme} onClick={() => setAskOpen(true)} hidden={askOpen} />
-
-      <CommandMenu theme={theme} open={cmdOpen} setOpen={setCmdOpen} items={cmdItems} onRun={runCmd} />
-      <AskAyush theme={theme} open={askOpen} setOpen={setAskOpen} />
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────
-// Section rail — left-side dot index that pulses on the active section
-// ─────────────────────────────────────────────────────────────
-function SectionRail({ theme, active, scrollTo }) {
-  const sections = [
-    { id: "hero", n: "00" },
-    { id: "work", n: "01" },
-    { id: "timeline", n: "02" },
-    { id: "manifesto", n: "03" },
-    { id: "now", n: "04" },
-    { id: "reading", n: "05" },
-    { id: "contact", n: "06" },
-  ];
-  return (
-    <div style={{
-      position: "fixed", left: 24, top: "50%", transform: "translateY(-50%)",
-      zIndex: 50, display: "flex", flexDirection: "column", gap: 14,
-    }}>
-      {sections.map((s) => {
-        const on = active === s.id;
-        return (
-          <button key={s.id} data-cursor="link" data-cursor-label={s.n} onClick={() => scrollTo(s.id)}
-            style={{
-              border: 0, background: "transparent", padding: 4,
-              display: "flex", alignItems: "center", gap: 10,
-            }}>
-            <span style={{
-              width: on ? 18 : 8, height: 1, background: theme.ink, opacity: on ? 1 : 0.3,
-              transition: "width .35s cubic-bezier(.2,.8,.2,1), opacity .25s",
-            }}/>
-            <span className="mono" style={{
-              fontSize: 10, color: on ? theme.ink : theme.dim,
-              opacity: on ? 1 : 0.5, transition: "opacity .25s, color .25s",
-            }}>{s.n}</span>
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────
-// Nav
-// ─────────────────────────────────────────────────────────────
-function TopNav({ theme, P, active, scrollTo, onCmd, onAsk, soundOn, toggleSound }) {
-  const links = [
-    { id: "work", label: "Work" },
-    { id: "timeline", label: "Timeline" },
-    { id: "manifesto", label: "Manifesto" },
-    { id: "now", label: "Now" },
-    { id: "reading", label: "Reading" },
-  ];
-  return (
-    <nav style={{
-      position: "fixed", top: 0, left: 0, right: 0, zIndex: 90,
-      padding: "16px 32px", display: "flex", alignItems: "center", gap: 24,
-      fontFamily: theme.body,
-      background: `linear-gradient(180deg, ${theme.bg}f0, ${theme.bg}80 70%, transparent)`,
-      backdropFilter: "blur(8px)",
-    }}>
-      <div data-cursor="link" data-cursor-label="home" onClick={() => scrollTo("hero")} style={{
-        fontFamily: theme.display, fontSize: 22, letterSpacing: -0.3,
-        display: "flex", alignItems: "center", gap: 8,
-      }}>
-        <span style={{ width: 8, height: 8, borderRadius: 4, background: theme.accent, display: "inline-block",
-          boxShadow: `0 0 8px ${theme.accent}` }} />
-        Ayush<span style={{ color: theme.dim }}>.</span>
-      </div>
-      <div style={{ flex: 1 }} />
-      <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-        {links.map((l) => (
-          <button key={l.id} data-cursor="link" onClick={() => scrollTo(l.id)} style={{
-            border: 0, background: "transparent", color: active === l.id ? theme.ink : theme.dim,
-            padding: "8px 12px", borderRadius: 6, fontSize: 13,
-            fontFamily: "inherit", transition: "color .2s",
-            fontWeight: active === l.id ? 500 : 400,
-          }}>{l.label}</button>
-        ))}
-      </div>
-      <div style={{ flex: 1 }} />
-      <button data-cursor="link" data-cursor-label={soundOn ? "mute" : "unmute"}
-        onClick={toggleSound} style={{
-        border: `1px solid ${theme.border}`, background: "transparent", color: theme.ink,
-        width: 34, height: 34, borderRadius: 17,
-        display: "flex", alignItems: "center", justifyContent: "center",
-      }}>
-        {soundOn ? (
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round">
-            <path d="M2 4.5h1.5L6 2v8L3.5 7.5H2v-3z"/><path d="M8 4.5c.6.5.6 2.5 0 3"/><path d="M9.5 3c1.3 1 1.3 5 0 6" opacity=".6"/>
-          </svg>
-        ) : (
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round">
-            <path d="M2 4.5h1.5L6 2v8L3.5 7.5H2v-3z"/><path d="M8 4l3 3M11 4l-3 3"/>
-          </svg>
-        )}
-      </button>
-      <button data-cursor="link" data-cursor-label="search" onClick={onCmd} className="mono" style={{
-        border: `1px solid ${theme.border}`, background: "transparent", color: theme.dim,
-        padding: "6px 12px", borderRadius: 17, fontSize: 12,
-        display: "flex", alignItems: "center", gap: 8, fontFamily: theme.mono,
-      }}>
-        <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
-          <circle cx="5" cy="5" r="3.5"/><path d="M8 8l2.5 2.5" strokeLinecap="round"/>
-        </svg>
-        Search <kbd style={{ background: theme.hover, padding: "1px 5px", borderRadius: 3, fontSize: 10 }}>⌘K</kbd>
-      </button>
-      <button data-cursor="link" data-cursor-label="ask" onClick={onAsk} className="btn-primary" style={{ padding: "8px 14px", fontSize: 12 }}>
-        <span style={{ width: 6, height: 6, borderRadius: 3, background: "#10b981", boxShadow: "0 0 6px #10b981", animation: "blink 2s ease infinite" }}/>
-        Ask Ayush
-      </button>
-    </nav>
-  );
-}
+// Section primitives used by routed pages (see `/app/*/page.jsx`).
 
 // ─────────────────────────────────────────────────────────────
 // Hero — interactive word arrange
 // ─────────────────────────────────────────────────────────────
-function Hero({ theme, P, play, onExplore, onAsk }) {
+/** `siteLinks` optional home-only row linking to routed sections without relying on header. */
+export function Hero({ theme, P, play, onExplore, onAsk, siteLinks }) {
   const [settled, setSettled] = useState(false);
   const seeds = useMemo(() => [
     { word: "0→1", x: 14, y: 22, rot: -6 },
@@ -609,6 +134,28 @@ function Hero({ theme, P, play, onExplore, onAsk }) {
               </span>
             </div>
           </Reveal>
+          {siteLinks?.length ? (
+            <Reveal delay={1.06}>
+              <nav aria-label="Site sections from home" style={{ marginTop: 22, pointerEvents: "auto" }}>
+                <div className="mono" style={{ fontSize: 11, color: theme.dim, display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: "4px 0" }}>
+                  <span style={{ marginRight: 10, opacity: 0.75 }}>Go to:</span>
+                  {siteLinks.map((l, ix) => (
+                    <span key={l.href} style={{ display: "inline-flex", alignItems: "baseline" }}>
+                      {ix > 0 ? <span aria-hidden style={{ opacity: 0.35, margin: "0 12px", userSelect: "none" }}>·</span> : null}
+                      <Link
+                        href={l.href}
+                        className="link-u"
+                        data-cursor="link"
+                        style={{ color: theme.ink, textDecoration: "none", letterSpacing: "0.06em", textTransform: "uppercase" }}
+                      >
+                        {l.label}
+                      </Link>
+                    </span>
+                  ))}
+                </div>
+              </nav>
+            </Reveal>
+          ) : null}
         </div>
       </div>
 
@@ -624,7 +171,7 @@ function Hero({ theme, P, play, onExplore, onAsk }) {
 // ─────────────────────────────────────────────────────────────
 // Section header
 // ─────────────────────────────────────────────────────────────
-function SectionHeader({ theme, label, title, sub }) {
+export function SectionHeader({ theme, label, title, sub }) {
   return (
     <div style={{ maxWidth: 1200, margin: "0 auto" }}>
       <Reveal>
@@ -647,7 +194,7 @@ function SectionHeader({ theme, label, title, sub }) {
 // ─────────────────────────────────────────────────────────────
 // Work
 // ─────────────────────────────────────────────────────────────
-function Work({ theme, projects, order, setOrder, setExpanded, cardRects }) {
+export function Work({ theme, projects, order, setOrder, setExpanded, cardRects }) {
   const { ref, onStart } = useDragReorder(order, setOrder);
   const ordered = order.map((id) => projects.find((p) => p.id === id)).filter(Boolean);
 
@@ -669,7 +216,7 @@ function ProjectCard({ theme, p, i, onGrab, onOpen, setRect }) {
   const ref = useRef(null);
   useEffect(() => { setRect(ref.current); }, []);
   return (
-    <div ref={(el) => { ref.current = el; setRect(el); }} data-item={p.id}
+    <div id={p.id} ref={(el) => { ref.current = el; setRect(el); }} data-item={p.id}
       style={{ transition: "transform .35s cubic-bezier(.2,.8,.2,1), box-shadow .25s, border-color .25s",
         borderRadius: 16, background: theme.surface,
         border: `1px solid ${theme.border}`, overflow: "hidden" }}>
@@ -718,7 +265,7 @@ function ProjectCard({ theme, p, i, onGrab, onOpen, setRect }) {
 // ─────────────────────────────────────────────────────────────
 // Project overlay (shared element)
 // ─────────────────────────────────────────────────────────────
-function ProjectOverlay({ theme, project, origin, onClose }) {
+export function ProjectOverlay({ theme, project, origin, onClose }) {
   const [phase, setPhase] = useState("enter");
 
   useEffect(() => {
@@ -902,7 +449,7 @@ function StoryNode({ theme, node, i }) {
 // ─────────────────────────────────────────────────────────────
 // Timeline — clickable role rows
 // ─────────────────────────────────────────────────────────────
-function Timeline({ theme, P, onOpenRole }) {
+export function Timeline({ theme, P, onOpenRole }) {
   return (
     <section id="timeline" style={{ padding: "120px 32px", borderTop: `1px solid ${theme.border}` }}>
       <SectionHeader theme={theme} label="02 / Trajectory" title="Six years. Four companies. One obsession." sub="Click any role for the full story." />
@@ -946,7 +493,7 @@ function Timeline({ theme, P, onOpenRole }) {
 // ─────────────────────────────────────────────────────────────
 // Role overlay — full timeline detail
 // ─────────────────────────────────────────────────────────────
-function RoleOverlay({ theme, role, onClose }) {
+export function RoleOverlay({ theme, role, onClose }) {
   const [phase, setPhase] = useState("enter");
   useEffect(() => {
     requestAnimationFrame(() => setPhase("open"));
@@ -1033,7 +580,7 @@ function RoleOverlay({ theme, role, onClose }) {
 // ─────────────────────────────────────────────────────────────
 // Manifesto — with AI summarize
 // ─────────────────────────────────────────────────────────────
-function Manifesto({ theme, P }) {
+export function Manifesto({ theme, P }) {
   const [tldr, setTldr] = useState(null);
   const [busy, setBusy] = useState(false);
   const { play } = useContext(SoundCtx);
@@ -1096,39 +643,9 @@ function Manifesto({ theme, P }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Now
-// ─────────────────────────────────────────────────────────────
-function Now({ theme, P }) {
-  return (
-    <section id="now" style={{ padding: "120px 32px", borderTop: `1px solid ${theme.border}` }}>
-      <SectionHeader theme={theme} label="04 / Now" title="What I'm up to this week." sub="Updated often." />
-      <div style={{ maxWidth: 920, margin: "72px auto 0", display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16 }}>
-        {P.now.map((n, i) => (
-          <Reveal key={i} delay={i * 0.08}>
-            <div style={{ padding: 28, borderRadius: 14, border: `1px solid ${theme.border}`,
-              background: theme.surface, minHeight: 160,
-              transition: "transform .25s, border-color .25s" }}
-              onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.borderColor = theme.ink; }}
-              onMouseLeave={(e) => { e.currentTarget.style.transform = ""; e.currentTarget.style.borderColor = theme.border; }}>
-              <div className="mono" style={{ fontSize: 11, color: theme.ink, letterSpacing: 0.08, textTransform: "uppercase", marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ width: 5, height: 5, borderRadius: 3, background: theme.ink, display: "inline-block" }}/>
-                {n.label}
-              </div>
-              <div style={{ fontFamily: theme.display, fontSize: 24, lineHeight: 1.3, letterSpacing: -0.2, textWrap: "pretty" }}>
-                {n.text}
-              </div>
-            </div>
-          </Reveal>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────
 // Reading — bookshelf spines + hover / tap bubbles
 // ─────────────────────────────────────────────────────────────
-function Reading({ theme, P }) {
+export function Reading({ theme, P }) {
   const shelves = P.readingShelves || [];
   const [pinnedKey, setPinnedKey] = useState(null);
   const zoneRef = useRef(null);
@@ -1273,7 +790,7 @@ function BookshelfSlot({ theme, book, bubbleKey, shelfIndex, bookIndex, pinned, 
 // ─────────────────────────────────────────────────────────────
 // Contact
 // ─────────────────────────────────────────────────────────────
-function Contact({ theme, P, onAsk }) {
+export function Contact({ theme, P, onAsk }) {
   return (
     <section id="contact" style={{ padding: "160px 32px 80px", borderTop: `1px solid ${theme.border}` }}>
       <div style={{ maxWidth: 1000, margin: "0 auto", textAlign: "center" }}>
@@ -1310,7 +827,7 @@ function Contact({ theme, P, onAsk }) {
   );
 }
 
-function Footer({ theme, P }) {
+export function Footer({ theme, P }) {
   return (
     <footer style={{ padding: "40px 32px", borderTop: `1px solid ${theme.border}`, fontFamily: theme.mono }}>
       <div style={{ maxWidth: 1200, margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 11, color: theme.dim, gap: 16, flexWrap: "wrap" }}>
@@ -1318,24 +835,6 @@ function Footer({ theme, P }) {
         <span>{P.location} · {P.phone}</span>
       </div>
     </footer>
-  );
-}
-
-function FloatingAsk({ theme, onClick, hidden }) {
-  if (hidden) return null;
-  return (
-    <button data-cursor="link" data-cursor-label="ask Ayush" onClick={onClick} style={{
-      position: "fixed", bottom: 24, right: 24, zIndex: 200,
-      background: theme.ink, color: theme.bg, border: 0,
-      padding: "12px 18px", borderRadius: 999,
-      display: "flex", alignItems: "center", gap: 10,
-      fontSize: 13, fontFamily: theme.body, fontWeight: 500,
-      boxShadow: "0 14px 36px rgba(0,0,0,.22)",
-      animation: "chatIn .5s cubic-bezier(.2,.8,.2,1) .8s backwards",
-    }}>
-      <span style={{ width: 8, height: 8, borderRadius: 4, background: "#10b981", boxShadow: "0 0 10px #10b981", animation: "blink 2s ease infinite" }}/>
-      Ask Ayush
-    </button>
   );
 }
 

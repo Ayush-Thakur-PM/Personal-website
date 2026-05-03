@@ -1,14 +1,14 @@
 "use client";
 
+import { Manifesto } from "@/components/Portfolio";
 import { PageScaffold } from "@/components/PageScaffold";
-import { HomeBody } from "./HomeBody";
 import { portfolio } from "@/lib/portfolio-data";
 import { PORTFOLIO_THEME } from "@/lib/theme";
 
-export default function HomePage() {
+export default function ManifestoPage() {
   return (
     <PageScaffold theme={PORTFOLIO_THEME} P={portfolio}>
-      {(openAsk) => <HomeBody openAsk={openAsk} />}
+      <Manifesto theme={PORTFOLIO_THEME} P={portfolio} />
     </PageScaffold>
   );
 }
