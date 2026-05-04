@@ -163,16 +163,34 @@ function SoundProvider({ children }) {
       drag:    { freq: 540, dur: 0.04,  vol: 0.03, type: "sine"     },
       drop:    { freq: 740, dur: 0.06,  vol: 0.04, type: "sine"     },
     };
-    const p = typeof kind === "string" ? presets[kind] || presets.click : { ...presets.click, ...kind };
+    // WHY: If `play` is ever wired as `onClick={play}`, React passes a synthetic event here.
+    // Spreading that into presets overwrites `type` with DOM event names like "click" — invalid for
+    // OscillatorNode and can crash devtools / error overlays with useless messages like "[object Event]".
+    let kindArg = kind;
+    if (kindArg != null && typeof kindArg === "object") {
+      const isDomOrReactUiEvent =
+        "nativeEvent" in kindArg ||
+        (typeof Event !== "undefined" && kindArg instanceof Event);
+      if (isDomOrReactUiEvent) kindArg = "click";
+    }
+    const presetName = typeof kindArg === "string" ? kindArg : null;
+    const p =
+      typeof kindArg === "string"
+        ? presets[kindArg] || presets.click
+        : kindArg != null && typeof kindArg === "object"
+          ? { ...presets.click, ...kindArg }
+          : presets.click;
+    const validOscTypes = new Set(["sine", "square", "sawtooth", "triangle", "custom"]);
+    const oscType = validOscTypes.has(p.type) ? p.type : presets.click.type;
     try {
       const o = ac.createOscillator();
       const g = ac.createGain();
-      o.type = p.type;
+      o.type = oscType;
       o.frequency.setValueAtTime(p.freq, ac.currentTime);
       // gentle pitch glide on open/close so it feels organic
-      if (kind === "open") o.frequency.exponentialRampToValueAtTime(p.freq * 1.4, ac.currentTime + p.dur);
-      if (kind === "close") o.frequency.exponentialRampToValueAtTime(p.freq * 0.7, ac.currentTime + p.dur);
-      if (kind === "success") o.frequency.exponentialRampToValueAtTime(p.freq * 1.5, ac.currentTime + p.dur);
+      if (presetName === "open") o.frequency.exponentialRampToValueAtTime(p.freq * 1.4, ac.currentTime + p.dur);
+      if (presetName === "close") o.frequency.exponentialRampToValueAtTime(p.freq * 0.7, ac.currentTime + p.dur);
+      if (presetName === "success") o.frequency.exponentialRampToValueAtTime(p.freq * 1.5, ac.currentTime + p.dur);
       g.gain.setValueAtTime(0, ac.currentTime);
       g.gain.linearRampToValueAtTime(p.vol, ac.currentTime + 0.005);
       g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + p.dur);
@@ -478,7 +496,7 @@ function CommandMenu({ theme, open, setOpen, items, onRun }) {
 // ─────────────────────────────────────────────────────────────
 function AskAyush({ theme, open, setOpen }) {
   const [msgs, setMsgs] = React.useState([
-    { role: "assistant", content: "Hey — I'm Ayush's AI twin, trained on his resume and case studies. Ask me anything: how he thinks about 0→1, what went wrong at Pokus, why he left Byju's. I'll answer honestly." },
+    { role: "assistant", content: "Hey — I'm Ayush's AI twin, trained on his resume and case studies. Ask me anything: how he thinks about 0→1, what he is building now, why he left Byju's. I'll answer honestly." },
   ]);
   const [input, setInput] = React.useState("");
   const [busy, setBusy] = React.useState(false);
@@ -489,7 +507,7 @@ function AskAyush({ theme, open, setOpen }) {
     "What's your strongest 0→1 story?",
     "Why did the faith-tech chatbot work?",
     "What kind of role are you looking for?",
-    "Tell me something most resumes wouldn't show.",
+    "Tell me something that isn't in your resume.",
   ];
 
   const send = async (text) => {
@@ -516,8 +534,8 @@ function AskAyush({ theme, open, setOpen }) {
       if (!res.ok) {
         const fallback =
           data.error === "NO_KEY"
-            ? "The AI assistant is not configured on this deployment yet (add ANTHROPIC_API_KEY on Vercel). You can still email Ayush — he reads everything."
-            : "Hmm, I couldn't reach my brain just now. Try again in a sec?";
+            ? "Hmm, I couldn't reach my brain just now. You can still email Ayush — he reads everything."
+            : "Hmm, I couldn't reach my brain just now. Try again in a sec. You can still email Ayush — he reads everything.";
         setMsgs((m) => [...m, { role: "assistant", content: fallback }]);
         return;
       }

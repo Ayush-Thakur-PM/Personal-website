@@ -7,7 +7,7 @@
 import Link from "next/link";
 import { HOME_DESTINATIONS } from "@/lib/site-nav";
 
-const BENTO_ORDER = ["/work", "/timeline", "/manifesto", "/now"];
+const BENTO_ORDER = ["/work", "/timeline", "/about", "/now"];
 
 function spanForHref(href) {
   if (href === "/work" || href === "/now") return { gridColumn: "1 / -1" };
@@ -16,6 +16,7 @@ function spanForHref(href) {
 
 function accentStripe(href) {
   if (href === "/work") return "linear-gradient(90deg, rgba(16,185,129,0.92) 0px, rgba(16,185,129,0.92) 3px, transparent 3px)";
+  if (href === "/about") return `linear-gradient(90deg, rgba(15,15,15,0.16) 0px, rgba(15,15,15,0.16) 1px, transparent 1px)`;
   if (href === "/now") return "linear-gradient(90deg, rgba(234,88,12,0.95) 0px, rgba(234,88,12,0.95) 3px, transparent 3px)";
   return `linear-gradient(90deg, rgba(15,15,15,0.16) 0px, rgba(15,15,15,0.16) 1px, transparent 1px)`;
 }
@@ -101,29 +102,31 @@ export function HomeWayfinding({ theme }) {
             color: theme.ink,
           }}
         >
-          Threads worth opening.
+          Wander around.
         </p>
         <p
           style={{
             margin: 0,
-            maxWidth: "46ch",
+            maxWidth: "48ch",
             fontSize: 16,
             lineHeight: 1.55,
             color: theme.dim,
             fontFamily: theme.body,
           }}
         >
-          Reading lives on{' '}
+          Four threads — will tell you about ayush, his work, his personality, and his interests.
+          Shelf, screens, and cadence live on{' '}
           <Link href="/now" style={{ color: theme.ink, textUnderlineOffset: 3 }}>
             Now
           </Link>
-          — bookshelf, screens, and cadence live there together.
+          .
         </p>
       </div>
 
       <div className="bento-board">
-        {items.map((item) => {
+        {items.map((item, index) => {
           const { gridColumn } = spanForHref(item.href);
+          const num = String(index + 1).padStart(2, "0");
           return (
             <Link
               key={item.href}
@@ -145,17 +148,18 @@ export function HomeWayfinding({ theme }) {
                     color: theme.dim,
                   }}
                 >
-                  {item.label}
+                  {num} · {item.label}
                 </span>
                 <span
                   style={{
                     display: "block",
                     marginTop: 16,
                     fontFamily: theme.display,
-                    fontSize: "clamp(1.35rem, 3.2vw, 1.9rem)",
+                    fontSize: "clamp(1.2rem, 2.95vw, 1.72rem)",
                     letterSpacing: "-0.025em",
-                    lineHeight: 1.12,
+                    lineHeight: 1.18,
                     color: theme.ink,
+                    fontWeight: 400,
                   }}
                 >
                   {item.hint}

@@ -29,9 +29,10 @@ export function SiteChrome({ theme, P, onAskClick, floatingAskHidden, children }
       { id: "go-home", label: "Home", hint: "/", icon: "○", href: "/" },
       { id: "go-work", label: "Work", hint: "section", icon: "◢", href: "/work" },
       { id: "go-timeline", label: "Timeline", hint: "section", icon: "◷", href: "/timeline" },
-      { id: "go-manifesto", label: "Manifesto", hint: "section", icon: "§", href: "/manifesto" },
+      { id: "go-about", label: "About", hint: "how I got here", icon: "§", href: "/about" },
       { id: "go-now", label: "Now", hint: "section", icon: "●", href: "/now" },
-      { id: "go-contact", label: "Jump to Contact (home)", hint: "section", icon: "✉", href: "/#contact" },
+      { id: "go-contact", label: "Get in touch", hint: "/contact", icon: "✉", href: "/contact" },
+      { id: "go-contact-home", label: "Contact block (home)", hint: "#contact", icon: "↓", href: "/#contact" },
       ...P.projects.map((p) => ({
         id: `proj-${p.id}`,
         label: p.title,
@@ -188,6 +189,7 @@ export function SiteChrome({ theme, P, onAskClick, floatingAskHidden, children }
                   href={l.href}
                   data-cursor="link"
                   data-cursor-label={l.label}
+                  title={l.hint ?? undefined}
                   data-active={on ? "true" : "false"}
                   className="site-nav-pill-link mono"
                   style={{
@@ -282,31 +284,24 @@ export function SiteChrome({ theme, P, onAskClick, floatingAskHidden, children }
             <span className="site-nav-search-txt" style={{ textTransform: "uppercase" }}>Search</span>
             <kbd style={{ background: theme.hover, padding: "2px 6px", borderRadius: 4, fontSize: 10 }}>⌘K</kbd>
           </button>
-          <button
-            type="button"
+          <Link
+            href="/contact"
             className="site-tool-btn btn-primary"
             data-cursor="link"
-            data-cursor-label="ask"
-            onClick={() => onAskClick?.()}
+            data-cursor-label="get in touch"
             style={{
               padding: "9px 16px",
               fontSize: 12,
               borderRadius: 9999,
               boxShadow: "0 8px 24px rgba(15, 15, 15, 0.12)",
+              textDecoration: "none",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
             }}
           >
-            <span
-              style={{
-                width: 6,
-                height: 6,
-                borderRadius: 3,
-                background: "#10b981",
-                boxShadow: "0 0 6px #10b981",
-                animation: "blink 2s ease infinite",
-              }}
-            />
-            Ask Ayush
-          </button>
+            Get in touch
+          </Link>
         </div>
       </nav>
       <style>{`

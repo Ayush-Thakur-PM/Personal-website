@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo, useContext } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { createPortal } from "react-dom";
 import {
@@ -71,91 +72,177 @@ export function Hero({ theme, P, play, onExplore, onAsk, siteLinks }) {
     setSettled(false);
   };
 
+  const heroPortrait = P.portrait?.src;
+
   return (
     <section id="hero" style={{ position: "relative", minHeight: "100vh", padding: "120px 32px 80px",
       display: "flex", flexDirection: "column", justifyContent: "center",
     }}>
-      <div ref={wrapRef} style={{ position: "relative", maxWidth: 1200, margin: "0 auto", width: "100%", minHeight: 540 }}>
-        <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
-          {positions.map((w, i) => (
-            <div key={i} data-cursor="drag" data-cursor-label="grab" onPointerDown={grab(i)} style={{
-              position: "absolute", left: `${w.x}%`, top: `${w.y}%`,
-              transform: `translate(-50%,-50%) rotate(${w.rot}deg)`,
-              transition: "left .8s cubic-bezier(.2,.8,.2,1), top .8s cubic-bezier(.2,.8,.2,1), transform .8s cubic-bezier(.2,.8,.2,1), background .2s",
-              pointerEvents: "auto", userSelect: "none",
-              padding: "6px 12px", borderRadius: 999,
-              background: settled ? theme.hover : "transparent",
-              border: `1px solid ${settled ? "transparent" : theme.border}`,
-              color: theme.dim, fontSize: 12, fontFamily: theme.mono,
-              whiteSpace: "nowrap",
-            }}>{w.word}</div>
-          ))}
-        </div>
+      <style>{`
+        /* Single hero column — portrait is a badge at the top of the stack, not a second column */
+        .hero-main-grid {
+          position: relative;
+          max-width: 1200px;
+          margin: 0 auto;
+          width: 100%;
+        }
+        .hero-portrait-stack {
+          width: clamp(84px, 14vw, 112px);
+          height: clamp(84px, 14vw, 112px);
+          margin-bottom: 20px;
+          transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1);
+        }
+        .hero-photo-shell {
+          width: 100%;
+          height: 100%;
+          border-radius: 9999px;
+          padding: 3px;
+          background: linear-gradient(145deg, ${theme.surface} 0%, color-mix(in srgb, ${theme.ink} 6%, ${theme.surface}) 100%);
+          border: 1px solid ${theme.border};
+          box-shadow: 0 12px 32px rgba(15, 15, 15, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+          box-sizing: border-box;
+          transition: box-shadow 200ms cubic-bezier(0.23, 1, 0.32, 1);
+        }
+        .hero-photo-core {
+          position: relative;
+          width: 100%;
+          height: 100%;
+          border-radius: 9999px;
+          overflow: hidden;
+          transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1);
+        }
+        @media (hover: hover) and (pointer: fine) {
+          .hero-portrait-stack:hover {
+            transform: translateY(-2px);
+          }
+          .hero-portrait-stack:hover .hero-photo-shell {
+            box-shadow: 0 18px 44px rgba(15, 15, 15, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.65);
+          }
+          .hero-portrait-stack:hover .hero-photo-core {
+            transform: scale(1.03);
+          }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .hero-portrait-stack,
+          .hero-photo-shell,
+          .hero-photo-core {
+            transition: none !important;
+          }
+          .hero-portrait-stack,
+          .hero-portrait-stack:hover {
+            transform: none !important;
+          }
+          .hero-portrait-stack:hover .hero-photo-core {
+            transform: none !important;
+          }
+        }
+      `}</style>
 
-        <div style={{ position: "relative", zIndex: 2, pointerEvents: "none" }}>
-          <Reveal delay={0.1}>
-            <div className="mono" style={{ fontSize: 12, color: theme.dim, letterSpacing: 0.08, textTransform: "uppercase", marginBottom: 16 }}>
-              {P.specialty} — {P.location}
-            </div>
-          </Reveal>
-          <BlurIn tag="h1" className="display" style={{
-            fontSize: "clamp(56px, 11vw, 168px)", margin: 0, lineHeight: 0.95,
-          }}>{P.name}</BlurIn>
-          <div style={{ marginTop: 14, maxWidth: 680 }}>
-            <BlurIn delay={0.4} tag="p" style={{
-              fontSize: "clamp(18px, 2vw, 26px)", lineHeight: 1.4, color: theme.ink, margin: 0,
-              fontFamily: theme.body, fontWeight: 400, textWrap: "balance",
-            }}>{P.tagline}</BlurIn>
+      <div className="hero-main-grid">
+        <div ref={wrapRef} style={{ position: "relative", width: "100%", minHeight: 540 }}>
+          <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+            {positions.map((w, i) => (
+              <div key={i} data-cursor="drag" data-cursor-label="grab" onPointerDown={grab(i)} style={{
+                position: "absolute", left: `${w.x}%`, top: `${w.y}%`,
+                transform: `translate(-50%,-50%) rotate(${w.rot}deg)`,
+                transition: "left .8s cubic-bezier(.2,.8,.2,1), top .8s cubic-bezier(.2,.8,.2,1), transform .8s cubic-bezier(.2,.8,.2,1), background .2s",
+                pointerEvents: "auto", userSelect: "none",
+                padding: "6px 12px", borderRadius: 999,
+                background: settled ? theme.hover : "transparent",
+                border: `1px solid ${settled ? "transparent" : theme.border}`,
+                color: theme.dim, fontSize: 12, fontFamily: theme.mono,
+                whiteSpace: "nowrap",
+              }}>{w.word}</div>
+            ))}
           </div>
-          <Reveal delay={0.8}>
-            <div style={{ marginTop: 32, display: "flex", gap: 10, pointerEvents: "auto" }}>
-              <button data-cursor="link" data-cursor-label="see work" onClick={onExplore} className="btn-primary">
-                See the work
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M3 6h6M6 3l3 3-3 3"/></svg>
-              </button>
-              <button data-cursor="link" data-cursor-label={settled ? "scramble" : "arrange"}
-                onClick={settled ? scramble : arrange} className="btn-ghost">
-                {settled ? "Scramble" : "Arrange the chaos"}
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
-                  {settled ? <path d="M3 3l6 6M9 3l-6 6"/> : <path d="M2 6h8M2 3h8M2 9h5"/>}
-                </svg>
-              </button>
-            </div>
-          </Reveal>
-          <Reveal delay={1.0}>
-            <div className="mono" style={{ marginTop: 40, fontSize: 11, color: theme.dim, display: "flex", gap: 16, flexWrap: "wrap" }}>
-              <span>try: drag the words →</span>
-              <span style={{ opacity: .5 }}>•</span>
-              <span>press ⌘K to search</span>
-              <span style={{ opacity: .5 }}>•</span>
-              <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ width: 6, height: 6, borderRadius: 3, background: "#10b981", boxShadow: "0 0 6px #10b981" }}/>
-                open to founding PM roles
-              </span>
-            </div>
-          </Reveal>
-          {siteLinks?.length ? (
-            <Reveal delay={1.06}>
-              <nav aria-label="Site sections from home" style={{ marginTop: 22, pointerEvents: "auto" }}>
-                <div className="mono" style={{ fontSize: 11, color: theme.dim, display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: "4px 0" }}>
-                  <span style={{ marginRight: 10, opacity: 0.75 }}>Go to:</span>
-                  {siteLinks.map((l, ix) => (
-                    <span key={l.href} style={{ display: "inline-flex", alignItems: "baseline" }}>
-                      {ix > 0 ? <span aria-hidden style={{ opacity: 0.35, margin: "0 12px", userSelect: "none" }}>·</span> : null}
-                      <Link
-                        href={l.href}
-                        className="link-u"
-                        data-cursor="link"
-                        style={{ color: theme.ink, textDecoration: "none", letterSpacing: "0.06em", textTransform: "uppercase" }}
-                      >
-                        {l.label}
-                      </Link>
-                    </span>
-                  ))}
+
+          <div style={{ position: "relative", zIndex: 2, pointerEvents: "none" }}>
+            {heroPortrait ? (
+              <Reveal delay={0.04} y={8}>
+                {/*
+                  First-fold identity marker: mirrors common portfolio pattern (photo before name),
+                  stays small so it cues “human” without fighting the draggable word chaos.
+                */}
+                <div className="hero-portrait-stack" style={{ pointerEvents: "auto" }}>
+                  <div className="hero-photo-shell">
+                    <div className="hero-photo-core">
+                      <Image
+                        src={P.portrait.src}
+                        alt={P.portrait.alt}
+                        fill
+                        sizes="112px"
+                        style={{ objectFit: "cover", objectPosition: "center 18%" }}
+                        priority
+                      />
+                    </div>
+                  </div>
                 </div>
-              </nav>
+              </Reveal>
+            ) : null}
+            <Reveal delay={0.1}>
+              <div className="mono" style={{ fontSize: 12, color: theme.dim, letterSpacing: 0.08, textTransform: "uppercase", marginBottom: 16 }}>
+                {P.specialty} — {P.location}
+              </div>
             </Reveal>
-          ) : null}
+            <BlurIn tag="h1" className="display" style={{
+              fontSize: "clamp(56px, 11vw, 168px)", margin: 0, lineHeight: 0.95,
+            }}>{P.name}</BlurIn>
+            <div style={{ marginTop: 14, maxWidth: 680 }}>
+              <BlurIn delay={0.4} tag="p" style={{
+                fontSize: "clamp(18px, 2vw, 26px)", lineHeight: 1.4, color: theme.ink, margin: 0,
+                fontFamily: theme.body, fontWeight: 400, textWrap: "balance",
+              }}>{P.tagline}</BlurIn>
+            </div>
+            <Reveal delay={0.8}>
+              <div style={{ marginTop: 32, display: "flex", gap: 10, pointerEvents: "auto", flexWrap: "wrap" }}>
+                <button data-cursor="link" data-cursor-label="see work" onClick={onExplore} className="btn-primary">
+                  See the work
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M3 6h6M6 3l3 3-3 3"/></svg>
+                </button>
+                <button data-cursor="link" data-cursor-label={settled ? "scramble" : "arrange"}
+                  onClick={settled ? scramble : arrange} className="btn-ghost">
+                  {settled ? "Scramble" : "Arrange the chaos"}
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
+                    {settled ? <path d="M3 3l6 6M9 3l-6 6"/> : <path d="M2 6h8M2 3h8M2 9h5"/>}
+                  </svg>
+                </button>
+              </div>
+            </Reveal>
+            <Reveal delay={1.0}>
+              <div className="mono" style={{ marginTop: 40, fontSize: 11, color: theme.dim, display: "flex", gap: 16, flexWrap: "wrap" }}>
+                <span>try: drag the words →</span>
+                <span style={{ opacity: .5 }}>•</span>
+                <span>press ⌘K to search</span>
+                <span style={{ opacity: .5 }}>•</span>
+                <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ width: 6, height: 6, borderRadius: 3, background: "#10b981", boxShadow: "0 0 6px #10b981" }}/>
+                  open to founding PM roles
+                </span>
+              </div>
+            </Reveal>
+            {siteLinks?.length ? (
+              <Reveal delay={1.06}>
+                <nav aria-label="Site sections from home" style={{ marginTop: 22, pointerEvents: "auto" }}>
+                  <div className="mono" style={{ fontSize: 11, color: theme.dim, display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: "4px 0" }}>
+                    <span style={{ marginRight: 10, opacity: 0.75 }}>Go to:</span>
+                    {siteLinks.map((l, ix) => (
+                      <span key={l.href} style={{ display: "inline-flex", alignItems: "baseline" }}>
+                        {ix > 0 ? <span aria-hidden style={{ opacity: 0.35, margin: "0 12px", userSelect: "none" }}>·</span> : null}
+                        <Link
+                          href={l.href}
+                          className="link-u"
+                          data-cursor="link"
+                          style={{ color: theme.ink, textDecoration: "none", letterSpacing: "0.06em", textTransform: "uppercase" }}
+                        >
+                          {l.label}
+                        </Link>
+                      </span>
+                    ))}
+                  </div>
+                </nav>
+              </Reveal>
+            ) : null}
+          </div>
         </div>
       </div>
 
@@ -200,7 +287,7 @@ export function Work({ theme, projects, order, setOrder, setExpanded, cardRects 
 
   return (
     <section id="work" style={{ padding: "120px 32px", borderTop: `1px solid ${theme.border}` }}>
-      <SectionHeader theme={theme} label="01 / Work" title="Four projects that moved numbers that mattered."
+      <SectionHeader theme={theme} label="Work" title="Four projects that moved numbers that mattered."
         sub="Drag to reorder. Click any card to dive in." />
       <div ref={ref} style={{ maxWidth: 1200, margin: "0 auto", display: "grid", gridTemplateColumns: "1fr", gap: 16, marginTop: 56 }}>
         {ordered.map((p, i) => (
@@ -452,7 +539,7 @@ function StoryNode({ theme, node, i }) {
 export function Timeline({ theme, P, onOpenRole }) {
   return (
     <section id="timeline" style={{ padding: "120px 32px", borderTop: `1px solid ${theme.border}` }}>
-      <SectionHeader theme={theme} label="02 / Trajectory" title="Six years. Four companies. One obsession." sub="Click any role for the full story." />
+      <SectionHeader theme={theme} label="Trajectory" title="Six years. Four companies. One obsession." sub="Click any role for the full story." />
       <div style={{ maxWidth: 920, margin: "72px auto 0", position: "relative", paddingLeft: 28 }}>
         <div style={{ position: "absolute", left: 6, top: 12, bottom: 12, width: 1, background: theme.border }} />
         {P.timeline.map((t, i) => (
@@ -578,14 +665,17 @@ export function RoleOverlay({ theme, role, onClose }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Manifesto — with AI summarize
+// About — story + philosophy (manifesto) + education grid + AI TL;DR — portrait lives on home hero only
 // ─────────────────────────────────────────────────────────────
-export function Manifesto({ theme, P }) {
+export function AboutPage({ theme, P }) {
   const [tldr, setTldr] = useState(null);
   const [busy, setBusy] = useState(false);
   const { play } = useContext(SoundCtx);
+  const about = P.about;
+
   const summarize = async () => {
-    setBusy(true); play("click");
+    setBusy(true);
+    play("click");
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
@@ -601,7 +691,7 @@ export function Manifesto({ theme, P }) {
       });
       const data = await res.json().catch(() => ({}));
       const line = res.ok ? String(data.reply || "").trim().replace(/^["']|["']$/g, "") : "";
-      setTldr(line || "Product is empathy with deadlines.");
+      setTldr(line || "Obsessing over user problems");
       if (line) play("success");
     } catch {
       setTldr("Product is empathy with deadlines.");
@@ -609,35 +699,361 @@ export function Manifesto({ theme, P }) {
     setBusy(false);
   };
 
+  const creds = about?.credentials ?? [];
+
   return (
-    <section id="manifesto" style={{ padding: "120px 32px", borderTop: `1px solid ${theme.border}` }}>
-      <SectionHeader theme={theme} label="03 / Manifesto" title="How I think about product." />
-      <div style={{ maxWidth: 760, margin: "72px auto 0" }}>
-        {P.manifesto.map((para, i) => (
-          <Reveal key={i} delay={i * 0.1}>
-            <p style={{ fontFamily: theme.display, fontSize: "clamp(22px, 2.5vw, 32px)", lineHeight: 1.4,
-              letterSpacing: -0.2, marginBottom: 28, textWrap: "pretty" }}>
-              {para}
-            </p>
-          </Reveal>
-        ))}
-        <Reveal delay={0.3}>
-          <div style={{ marginTop: 40, padding: 22, borderRadius: 14, background: theme.hover,
-            border: `1px dashed ${theme.border}` }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: tldr ? 14 : 0 }}>
-              <span style={{ fontSize: 14, color: theme.dim, flex: 1 }}>Too long? Let my AI compress it.</span>
-              <button data-cursor="link" data-cursor-label="summarize" onClick={summarize} disabled={busy} className="btn-ghost" style={{ padding: "6px 12px", fontSize: 12 }}>
-                {busy ? "Thinking…" : tldr ? "Again" : "Summarize ✦"}
-              </button>
-            </div>
-            {tldr && (
-              <div className="display" style={{ fontSize: 24, lineHeight: 1.3, color: theme.ink, letterSpacing: -0.2, animation: "msgIn .4s cubic-bezier(.2,.8,.2,1)" }}>
-                "{tldr}"
-              </div>
-            )}
-          </div>
+    <section id="about" style={{ padding: "120px 32px", borderTop: `1px solid ${theme.border}` }}>
+      <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+        <Reveal>
+          <p
+            className="mono"
+            style={{
+              fontSize: 11,
+              color: theme.dim,
+              letterSpacing: 0.1,
+              textTransform: "uppercase",
+              margin: "0 0 20px",
+            }}
+          >
+            About
+          </p>
         </Reveal>
+        <BlurIn
+          tag="h1"
+          className="display"
+          style={{
+            fontSize: "clamp(36px, 5.5vw, 72px)",
+            lineHeight: 1,
+            margin: 0,
+            maxWidth: 980,
+            textWrap: "balance",
+          }}
+        >
+          {about?.headline ?? "How I work and what I care about."}
+        </BlurIn>
+        <div style={{ maxWidth: 720, marginTop: 32 }}>
+          {(about?.story ?? []).map((para, i) => (
+            <Reveal key={i} delay={0.06 + i * 0.08}>
+              <p
+                style={{
+                  margin: i === 0 ? 0 : "18px 0 0",
+                  fontFamily: theme.body,
+                  fontSize: "clamp(16px, 1.7vw, 18px)",
+                  lineHeight: 1.62,
+                  color: theme.ink,
+                  textWrap: "pretty",
+                }}
+              >
+                {para}
+              </p>
+            </Reveal>
+          ))}
+        </div>
       </div>
+
+      {/* Philosophy before education so visitors get beliefs before credentials — matches how people actually skim. */}
+      <div style={{ maxWidth: 1200, margin: "96px auto 0" }}>
+        <SectionHeader theme={theme} label="Philosophy" title="How I think about product." />
+        <div style={{ maxWidth: 720, marginTop: 44 }}>
+          {P.manifesto.map((para, i) => (
+            <Reveal key={i} delay={i * 0.1}>
+              <p
+                style={{
+                  fontFamily: theme.body,
+                  fontSize: "clamp(16px, 1.7vw, 18px)",
+                  lineHeight: 1.62,
+                  color: theme.ink,
+                  margin: i === 0 ? 0 : "18px 0 0",
+                  textWrap: "pretty",
+                }}
+              >
+                {para}
+              </p>
+            </Reveal>
+          ))}
+          <Reveal delay={0.3}>
+            <div
+              style={{
+                marginTop: 32,
+                padding: 22,
+                borderRadius: 16,
+                background: theme.hover,
+                border: `1px dashed ${theme.border}`,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: tldr ? 14 : 0 }}>
+                <span style={{ fontSize: 14, color: theme.dim, flex: 1 }}>Too long? Let my AI compress it.</span>
+                <button
+                  type="button"
+                  data-cursor="link"
+                  data-cursor-label="summarize"
+                  onClick={summarize}
+                  disabled={busy}
+                  className="btn-ghost"
+                  style={{ padding: "6px 12px", fontSize: 12 }}
+                >
+                  {busy ? "Thinking…" : tldr ? "Again" : "Summarize ✦"}
+                </button>
+              </div>
+              {tldr ? (
+                <div
+                  className="display"
+                  style={{
+                    fontSize: 24,
+                    lineHeight: 1.3,
+                    color: theme.ink,
+                    letterSpacing: -0.2,
+                    animation: "msgIn .4s cubic-bezier(.2,.8,.2,1)",
+                  }}
+                >
+                  &ldquo;{tldr}&rdquo;
+                </div>
+              ) : null}
+            </div>
+          </Reveal>
+        </div>
+      </div>
+
+      {about?.howTitle && creds.length > 0 ? (
+        <div style={{ maxWidth: 1200, margin: "96px auto 0" }}>
+          <Reveal>
+            <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 24, flexWrap: "wrap" }}>
+              <h2 className="display" style={{ fontSize: "clamp(36px, 5.5vw, 72px)", margin: 0, maxWidth: 980, lineHeight: 1, textWrap: "balance" }}>
+                {about.howTitle}
+              </h2>
+              <span className="mono" style={{ fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase", color: theme.dim }}>
+                Formal training
+              </span>
+            </div>
+          </Reveal>
+          <style>{`
+            .about-edu-card {
+              transition: transform 240ms cubic-bezier(0.23, 1, 0.32, 1), border-color 240ms cubic-bezier(0.23, 1, 0.32, 1);
+            }
+            @media (hover: hover) and (pointer: fine) {
+              .about-edu-card:hover {
+                transform: translateY(-4px);
+                border-color: ${theme.ink}25;
+              }
+            }
+          `}</style>
+          <div
+            style={{
+              marginTop: 28,
+              display: "grid",
+              gap: "18px 20px",
+              gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+            }}
+          >
+            {creds.map((cred, i) => {
+              if (cred.line) {
+                return (
+                  <Reveal key={`line-${i}`} delay={i * 0.06}>
+                    <p
+                      style={{
+                        gridColumn: "1 / -1",
+                        padding: "20px 24px",
+                        borderRadius: 18,
+                        border: `1px solid ${theme.border}`,
+                        background: theme.surface,
+                        fontFamily: theme.body,
+                        fontSize: 16,
+                        lineHeight: 1.55,
+                        color: theme.dim,
+                        margin: 0,
+                      }}
+                    >
+                      {cred.line}
+                    </p>
+                  </Reveal>
+                );
+              }
+              return (
+                <Reveal key={cred.step ?? i} delay={i * 0.07}>
+                  <article
+                    className="about-edu-card"
+                    style={{
+                      position: "relative",
+                      borderRadius: 22,
+                      padding: "28px 24px 26px",
+                      border: `1px solid ${theme.border}`,
+                      background: `linear-gradient(155deg, ${theme.surface} 0%, color-mix(in srgb, ${theme.bg} 65%, ${theme.surface}) 100%)`,
+                      boxShadow: `0 18px 40px rgba(15, 15, 15, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.55)`,
+                      overflow: "hidden",
+                    }}
+                  >
+                    <div
+                      aria-hidden
+                      style={{
+                        position: "absolute",
+                        left: 24,
+                        right: 24,
+                        top: 0,
+                        height: 3,
+                        background: theme.accent,
+                        opacity: 0.92,
+                      }}
+                    />
+                    <span
+                      className="mono"
+                      style={{
+                        fontSize: 10,
+                        letterSpacing: "0.18em",
+                        textTransform: "uppercase",
+                        color: theme.dim,
+                      }}
+                    >
+                      {cred.step ?? String(i + 1).padStart(2, "0")}
+                    </span>
+                    <h3 className="display" style={{
+                      margin: "14px 0 0",
+                      fontSize: "clamp(1.35rem, 2.8vw, 1.65rem)",
+                      fontWeight: 400,
+                      letterSpacing: "-0.02em",
+                      lineHeight: 1.2,
+                      color: theme.ink,
+                    }}
+                    >
+                      {cred.institution}
+                    </h3>
+                    <p style={{ margin: "10px 0 0", fontFamily: theme.body, fontSize: 15, fontWeight: 600, color: theme.ink }}>
+                      {cred.degree}
+                    </p>
+                    <p style={{
+                      margin: "8px 0 0",
+                      paddingTop: 14,
+                      borderTop: `1px dashed ${theme.border}`,
+                      fontFamily: theme.body,
+                      fontSize: 14,
+                      lineHeight: 1.55,
+                      color: theme.dim,
+                    }}
+                    >
+                      {cred.focus}
+                    </p>
+                  </article>
+                </Reveal>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+/** Legacy export name — routes now live on `/about`. */
+export const Manifesto = AboutPage;
+
+// ─────────────────────────────────────────────────────────────
+// Contact — dedicated outreach page (paired with chrome “Get in touch” link)
+// ─────────────────────────────────────────────────────────────
+export function ContactPage({ theme, P }) {
+  const c = P.contactPage;
+  if (!c) return null;
+
+  const LinkBlock = ({
+    label,
+    children,
+    isLast,
+  }) => (
+    <div
+      className="contact-link-block"
+      style={{
+        padding: "22px 0",
+        borderBottom: isLast ? "none" : `1px solid ${theme.border}`,
+      }}
+    >
+      <p className="mono" style={{
+        margin: "0 0 10px", fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase", color: theme.dim,
+      }}
+      >
+        {label}
+      </p>
+      <div style={{ fontFamily: theme.body, fontSize: "clamp(16px, 2vw, 18px)", lineHeight: 1.5 }}>
+        {children}
+      </div>
+    </div>
+  );
+
+  return (
+    <section
+      id="contact"
+      aria-labelledby="contact-page-heading"
+      style={{
+        padding: "clamp(72px, 11vw, 124px) clamp(20px, 5vw, 40px) 96px",
+        maxWidth: 560,
+        margin: "0 auto",
+      }}
+    >
+      <Reveal>
+        <p className="mono" style={{ fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase", color: theme.dim, margin: "0 0 16px" }}>
+          Get in touch
+        </p>
+      </Reveal>
+      <Reveal delay={0.06}>
+        <h1
+          id="contact-page-heading"
+          className="display"
+          style={{
+            fontSize: "clamp(2rem, 5vw, 2.85rem)",
+            lineHeight: 1.1,
+            margin: 0,
+            letterSpacing: "-0.03em",
+            textWrap: "balance",
+          }}
+        >
+          {c.headline}
+        </h1>
+      </Reveal>
+      <Reveal delay={0.14}>
+        <p style={{
+          margin: "22px 0 0",
+          fontFamily: theme.display,
+          fontSize: "clamp(1.45rem, 3.2vw, 2rem)",
+          letterSpacing: "-0.02em",
+          color: theme.ink,
+        }}
+        >
+          {c.sub}
+        </p>
+      </Reveal>
+
+      <div style={{ marginTop: 40 }}>
+        <LinkBlock label="Phone">
+          <a href={`tel:${c.phoneTel}`} className="link-u" data-cursor="link" style={{ color: theme.ink }}>
+            {c.phoneDisplay}
+          </a>
+        </LinkBlock>
+        <LinkBlock label="Email">
+          <a href={`mailto:${encodeURIComponent(c.email)}`} className="link-u" data-cursor="link" style={{ color: theme.ink }}>
+            {c.email}
+          </a>
+        </LinkBlock>
+        <LinkBlock label="LinkedIn" isLast>
+          <a href={c.linkedinUrl} target="_blank" rel="noopener noreferrer" className="link-u" data-cursor="link" style={{ color: theme.ink }}>
+            {c.linkedinUrl.replace(/^https:\/\//, "")}
+          </a>
+        </LinkBlock>
+      </div>
+
+      {/* Soft callout ties this page back to conversational entry without cloning the overlay. */}
+      <Reveal delay={0.35}>
+        <p style={{
+          margin: "44px 0 0",
+          padding: "20px 22px",
+          borderRadius: 16,
+          background: theme.hover,
+          border: `1px solid ${theme.border}`,
+          fontFamily: theme.body,
+          fontSize: 14,
+          lineHeight: 1.58,
+          color: theme.dim,
+        }}
+        >
+          Prefer typing to calling? Ask Ayush is still on each page via the bubble — useful if you&apos;re screening for fit before scheduling.
+        </p>
+      </Reveal>
     </section>
   );
 }
