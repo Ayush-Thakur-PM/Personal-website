@@ -2,6 +2,7 @@
 
 import React from "react";
 import { createPortal } from "react-dom";
+import ReactMarkdown from "react-markdown";
 
 // Shared interactive primitives. Theme-agnostic.
 
@@ -588,7 +589,25 @@ function AskAyush({ theme, open, setOpen }) {
             background: m.role === "user" ? theme.ink : theme.hover,
             color: m.role === "user" ? theme.surface : theme.ink,
             animation: "msgIn .3s cubic-bezier(.2,.8,.2,1)",
-          }}>{m.content}</div>
+          }}>
+            {m.role === "assistant" ? (
+              <ReactMarkdown
+                components={{
+                  p: ({ children }) => <p style={{ margin: 0, marginBottom: 8 }}>{children}</p>,
+                  strong: ({ children }) => <strong style={{ fontWeight: 600 }}>{children}</strong>,
+                  em: ({ children }) => <em>{children}</em>,
+                  ul: ({ children }) => <ul style={{ margin: "8px 0", paddingLeft: 20 }}>{children}</ul>,
+                  ol: ({ children }) => <ol style={{ margin: "8px 0", paddingLeft: 20 }}>{children}</ol>,
+                  li: ({ children }) => <li style={{ marginBottom: 4 }}>{children}</li>,
+                  code: ({ children }) => <code style={{ background: "rgba(0,0,0,0.1)", padding: "2px 6px", borderRadius: 3, fontSize: "0.9em" }}>{children}</code>,
+                }}
+              >
+                {m.content}
+              </ReactMarkdown>
+            ) : (
+              m.content
+            )}
+          </div>
         ))}
         {busy && (
           <div style={{ alignSelf: "flex-start", padding: "10px 13px", borderRadius: 12, background: theme.hover, display: "flex", gap: 4 }}>

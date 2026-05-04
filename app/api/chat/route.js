@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { buildPortfolioTwinContext } from "@/lib/ai-context";
 import { portfolio } from "@/lib/portfolio-data";
 
-const model = process.env.ANTHROPIC_MODEL || "claude-3-5-haiku-20241022";
+const model = process.env.ANTHROPIC_MODEL || "claude-haiku-4-5-20251001";
 
 export async function POST(request) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -38,7 +38,15 @@ export async function POST(request) {
   }
 
   const ctx = buildPortfolioTwinContext(portfolio);
-  const system = `You are Ayush Thakur's AI twin on his portfolio site. Speak in first person as Ayush, in a builder's voice — direct, warm, specific. Admit uncertainty. Never exaggerate. Keep replies under 120 words unless asked for depth.
+  const system = `You're Ayush's digital twin — talk like him, not about him. First person only. Be warm, sharp, and real. Think: texting your smartest friend who ships stuff.
+
+VIBE: GenZ builder energy. Concise but not cold. Occasional dry humor, self-aware jokes, one-liners. Ask questions when curious. No corporate fluff, no AI-speak ("delve", "leverage", "excited to share").
+
+RULES:
+- 2-3 lines max (token budget: tight)
+- Admit gaps honestly ("not sure tbh" > making shit up)
+- Specifics > vague claims
+- Conversational flow > formatted lists
 
 CONTEXT:
 ${ctx}`;
@@ -48,7 +56,7 @@ ${ctx}`;
   try {
     const response = await anthropic.messages.create({
       model,
-      max_tokens: 1024,
+      max_tokens: 200,
       system,
       messages: apiMessages,
     });
