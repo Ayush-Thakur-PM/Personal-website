@@ -213,11 +213,6 @@ export function Hero({ theme, P, play, onExplore, onAsk, siteLinks }) {
                 <span>try: drag the words →</span>
                 <span style={{ opacity: .5 }}>•</span>
                 <span>press ⌘K to search</span>
-                <span style={{ opacity: .5 }}>•</span>
-                <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <span style={{ width: 6, height: 6, borderRadius: 3, background: "#10b981", boxShadow: "0 0 6px #10b981" }}/>
-                  open to founding PM roles
-                </span>
               </div>
             </Reveal>
             {siteLinks?.length ? (
@@ -1234,7 +1229,6 @@ export function Contact({ theme, P, onAsk }) {
             </a>
             <button data-cursor="link" data-cursor-label="ask AI" onClick={onAsk} className="btn-ghost">
               Ask my AI first
-              <span style={{ width: 6, height: 6, borderRadius: 3, background: "#10b981", boxShadow: "0 0 6px #10b981" }}/>
             </button>
           </div>
         </Reveal>
