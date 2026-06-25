@@ -1241,7 +1241,7 @@ export function Footer({ theme, P }) {
   return (
     <footer style={{ padding: "40px 32px", borderTop: `1px solid ${theme.border}`, fontFamily: theme.mono }}>
       <div style={{ maxWidth: 1200, margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 11, color: theme.dim, gap: 16, flexWrap: "wrap" }}>
-        <span>© 2026 {P.name} · Built with care, shipped with Claude.</span>
+        <span>© 2026 {P.name} · built over a cup of coffee and some million tokens.</span>
         <span>{P.location} · {P.phone}</span>
       </div>
     </footer>
